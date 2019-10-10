@@ -347,8 +347,11 @@ namespace lsignal
 	connection signal<R(Args...)>::connect(T *p, const U& fn, slot *owner)
 	{
 		auto mem_fn = std::move(construct_mem_fn(fn, p, make_int_sequence<sizeof...(Args)>{}));
-
-		return create_connection(std::move(mem_fn), owner);
+		
+		if (owner == nullptr)
+			return create_connection(std::move(mem_fn), std::is_base_of<slot, T>::value ? p : nullptr);
+		else
+			return create_connection(std::move(mem_fn), owner);
 	}
 
 	template<typename R, typename... Args>
