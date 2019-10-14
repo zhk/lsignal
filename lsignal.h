@@ -39,6 +39,25 @@ namespace lsignal
 	struct placeholder_lsignal
 	{
 	};
+
+    // std::integer_sequence for C++11
+
+    template<int... Ns>
+    struct int_sequence
+    {
+    };
+
+    template<int N, int... Ns>
+    struct make_int_sequence
+        : make_int_sequence<N - 1, N - 1, Ns...>
+    {
+    };
+
+    template<int... Ns>
+    struct make_int_sequence<0, Ns...>
+        : int_sequence<Ns...>
+    {
+    };
 }
 
 namespace std
@@ -54,25 +73,6 @@ namespace std
 
 namespace lsignal
 {
-	// std::integer_sequence for C++11
-
-	template<int... Ns>
-	struct int_sequence
-	{
-	};
-
-	template<int N, int... Ns>
-	struct make_int_sequence
-		: make_int_sequence<N-1, N-1, Ns...>
-	{
-	};
-
-	template<int... Ns>
-	struct make_int_sequence<0, Ns...>
-		: int_sequence<Ns...>
-	{
-	};
-
 	// connection
 
 	struct connection_data
