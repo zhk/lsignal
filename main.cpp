@@ -4,7 +4,7 @@
 #include <string>
 #include <chrono>
 
-#include <boost/signals2.hpp>
+//#include <boost/signals2.hpp>
 
 #include "lsignal.h"
 
@@ -50,7 +50,7 @@ struct baz
 	}
 };
 
-struct qux
+struct qux : public slot
 {
 	void print()
 	{
@@ -83,124 +83,135 @@ std::chrono::duration<double> get_performance(const std::function<void()>& fn)
 
 int main(int argc, char *argv[])
 {
-	(void)argc;
-	(void)argv;
+    (void)argc;
+    (void)argv;
 
-	// example 1
-	std::cout << "example #1:\n";
+    // example 1
+    std::cout << "example #1:\n";
 
-	signal<void(int, int)> data;
+    signal<void(int, int)> data;
 
-	data.connect(print_sum);
-	data.connect(print_mul);
+    data.connect(print_sum);
+    data.connect(print_mul);
 
-	data(3, 4);
+    data(3, 4);
 
-	// example 2
-	std::cout << "\nexample #2:\n";
+    // example 2
+    std::cout << "\nexample #2:\n";
 
-	signal<int(int)> worker;
+    signal<int(int)> worker;
 
-	worker.connect(pow2);
-	worker.connect(pow3);
+    worker.connect(pow2);
+    worker.connect(pow3);
 
-	std::cout << "last slot = " << worker(2) << "\n";
-	std::cout << "agg value = " << worker(2, sum_agg) << "\n";
+    std::cout << "last slot = " << worker(2) << "\n";
+    std::cout << "agg value = " << worker(2, sum_agg) << "\n";
 
-	// example 3
-	std::cout << "\nexample #3:\n";
+    // example 3
+    std::cout << "\nexample #3:\n";
 
-	signal<void()> news;
+    signal<void()> news;
 
-	connection conn_one = news.connect([]() { std::cout << "news #1\n"; });
-	connection conn_two = news.connect([]() { std::cout << "news #2\n"; });
-	news.connect([]() { std::cout << "news #3\n"; });
+    connection conn_one = news.connect([]() { std::cout << "news #1\n"; });
+    connection conn_two = news.connect([]() { std::cout << "news #2\n"; });
+    news.connect([]() { std::cout << "news #3\n"; });
 
-	std::cout << "(all connections)\n";
-	news();
+    std::cout << "(all connections)\n";
+    news();
 
-	std::cout << "(lock connection one)\n";
-	conn_one.set_lock(true);
-	news();
+    std::cout << "(lock connection one)\n";
+    conn_one.set_lock(true);
+    news();
 
-	std::cout << "(disconnect connection two)\n";
-	conn_two.disconnect();
-	news();
+    std::cout << "(disconnect connection two)\n";
+    conn_two.disconnect();
+    news();
 
-	// example 4
-	std::cout << "\nexample #4:\n";
+    // example 4
+    std::cout << "\nexample #4:\n";
 
-	signal<void()> dummy;
+    signal<void()> dummy;
+    signal<void()> dummy2;
 
-	auto foo = []() { std::cout << "lambda: foo\n"; };
+    auto foo = []() { std::cout << "lambda: foo\n"; };
 
-	dummy.connect(foo);
-	dummy.connect(bar);
+    dummy.connect(foo);
+    dummy.connect(bar);
 
-	baz b;
-	qux q;
+    baz b;
+    dummy.connect(b);
 
-	dummy.connect(b);
-	dummy.connect(&q, &qux::print);
+    {
+        qux q;
+        dummy.connect(&q, &qux::print);
+        dummy2.connect(&q, &qux::print);
+        dummy();
+        dummy2();
+    }
+    std::cout << "\nq destroyed\n";
 
-	dummy();
+    dummy();
 
-	// example 5
-	std::cout << "\nexample #5:\n";
+    // example 5
+    std::cout << "\nexample #5:\n";
 
-	signal<void()> printer;
+    signal<void()> printer;
 
-	{
-		demo dm(42);
+    {
+        demo dm(42);
 
-		auto print_value = [&dm]() { std::cout << "value = " << dm.value << "\n"; };
+        auto print_value = [&dm]() { std::cout << "value = " << dm.value << "\n"; };
 
-		printer.connect(std::move(print_value), &dm);
+        printer.connect(std::move(print_value), &dm);
 
-		printer();
-	}
+        printer();
+    }
 
-	printer();
+    printer();
 
-	// example 6
-	std::cout << "\nexample #6:\n";
+    // example 6
+    std::cout << "\nexample #6:\n";
 
-	signal<void(int)> first;
-	signal<void(int)> second;
+    signal<void(int)> first;
+    signal<void(int)> second;
 
-	first.connect(&second);
+    first.connect(&second);
 
-	second.connect([](int x)
-	{
-		std::cout << "x = " << x << "\n";
-	});
+    second.connect([](int x)
+    {
+        std::cout << "x = " << x << "\n";
+    });
 
-	first(10);
+    first(10);
 
-        // example 7
-	std::cout << "\nexample #7: slot\n";
+    // example 7
+    std::cout << "\nexample #7: slot\n";
 
-	signal<void()> sig7;
-	{
-		slot s;
+    signal<void()> sig7;
+    {
+        slot s;
 
-		// sig7.connect(bar, &s); // compile error
-		sig7.connect([](){ std::cout << "sig7\n"; }, &s);
-		sig7();
-	}
-	sig7();
+        // sig7.connect(bar, &s); // compile error
+        sig7.connect([]() { std::cout << "sig7\n"; }, &s);
+        sig7();
+    }
+    sig7();
 
-        // example 8
-	std::cout << "\nexample #8: disconnect_all\n";
+    // example 8
+    std::cout << "\nexample #8: disconnect_all\n";
 
-	signal<void()> sig8;
-	sig8.connect(bar);
-	sig8.connect(bar);
-	sig8.connect(bar);
-	sig8.disconnect_all();
-	sig8();
+    signal<void()> sig8;
+    sig8.connect(bar);
+    sig8.connect(bar);
+    sig8.connect(bar);
+    std::cout << "\nconnected 3\n";
+    sig8();
 
+    std::cout << "\ndisconnect_all\n";
+    sig8.disconnect_all();
+    sig8();
 
+#if 0
 	// check performance
 	lsignal::signal<void()> ls;
 	boost::signals2::signal_type<void(), boost::signals2::keywords::mutex_type<boost::signals2::dummy_mutex>>::type bs;
@@ -226,6 +237,7 @@ int main(int argc, char *argv[])
 	elapsed = std::chrono::duration_cast<std::chrono::nanoseconds>(get_performance(bsignal_func));
 
 	std::cout << elapsed.count() << " ns\n";
+#endif
 
 	return 0;
 }
