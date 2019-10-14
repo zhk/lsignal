@@ -349,7 +349,7 @@ namespace lsignal
 		auto mem_fn = std::move(construct_mem_fn(fn, p, make_int_sequence<sizeof...(Args)>{}));
 		
 		if (owner == nullptr)
-			return create_connection(std::move(mem_fn), std::is_base_of<slot, T>::value ? p : nullptr);
+			return create_connection(std::move(mem_fn), std::is_base_of<slot, T>::value ? (slot*)p : nullptr);
 		else
 			return create_connection(std::move(mem_fn), owner);
 	}
